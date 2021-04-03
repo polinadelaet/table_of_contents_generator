@@ -25,24 +25,37 @@ public class Content {
     public String createContents() {
         FileReader fileReader = null;
         BufferedReader reader = null;
-        int level;
+        int level = 0;
         int numberOfGaps = 0;
+        String []splitArray = new String[2];
         try {
             fileReader = new FileReader(file);
             reader = new BufferedReader(fileReader);
             String line = reader.readLine();
             while (line != null) {
-                //String []splitArray = line.split("\\#");
                 content.append("\n")
                         .append(line);
-                level = StringUtils.countMatches(line, "#");
-                String []splitArray = line.split(" +", 2);
-                //level = splitArray.length - 1;
+                String line2 = reader.readLine();
+                if ((line2 != null) && ((line2.length() == StringUtils.countMatches(line2, "=")) ||
+                        (line2.length() == StringUtils.countMatches(line2, "-")))) {
+                    if (line2.length() == StringUtils.countMatches(line2, "=")) {
+                        level = 1;
+                    }
+                    if (line2.length() == StringUtils.countMatches(line2, "-")) {
+                        level = 2;
+                    }
+                    splitArray[1] = line;
+                } else {
+                    level = StringUtils.countMatches(line, "#");
+                    //splitArray = line.split(" +", 2);
+                    splitArray = line.split("[# ]+", 2);
+                }
+
 
                 if ((level > 0) && (level <= 6)) {
                     numberOfGaps = (level - 1) * 4;
                     levels.put(level, levels.get(level) + 1);
-                    String gaps = StringUtils.repeat('-', numberOfGaps);
+                    //String gaps = StringUtils.repeat('-', numberOfGaps);
                     tableOfContents.append(StringUtils.repeat(' ', numberOfGaps)).
                             append(levels.get(level))
                                    .append(". [")
@@ -52,7 +65,7 @@ public class Content {
                             .append(splitArray[1].toLowerCase().replace(' ', '-'))
                             .append(")\n");
                 }
-                line = reader.readLine();
+                line = line2;
             }
 
             // считаем сначала первую строку
@@ -60,20 +73,7 @@ public class Content {
 
         }
 
-//        try {
-//            ByteArrayOutputStream byteArrayOutStream = new ByteArrayOutputStream();
-//            byteArrayOutStream.write(tableOfContents.toString().getBytes()); //someData - байты, которые нужно записать в начало файла
-//            FileInputStream fileInputStream = new FileInputStream(file); //myFile - файл, в начало которого нужно дописать байты
-//            while (fileInputStream.available() > 0)
-//                byteArrayOutStream.write(fileInputStream.read());
-//            fileInputStream.close();
-//            FileOutputStream fileOS = new FileOutputStream(file);
-//            byteArrayOutStream.writeTo(fileOS);
-//            fileOS.close();
-//            byteArrayOutStream.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+
 
        tableOfContents.append(content);
 
