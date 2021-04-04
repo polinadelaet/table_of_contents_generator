@@ -1,8 +1,12 @@
 package com;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.lang3.StringUtils;
 
 public class Content {
@@ -25,7 +29,7 @@ public class Content {
     public String createContents() {
         FileReader fileReader = null;
         BufferedReader reader = null;
-        int level = 0;
+
         int numberOfGaps = 0;
         String []splitArray = new String[2];
         try {
@@ -33,24 +37,29 @@ public class Content {
             reader = new BufferedReader(fileReader);
             String line = reader.readLine();
             while (line != null) {
+                int level = 0;
                 content.append("\n")
                         .append(line);
                 String line2 = reader.readLine();
-                if ((line2 != null) && ((line2.length() == StringUtils.countMatches(line2, "=")) ||
-                        (line2.length() == StringUtils.countMatches(line2, "-")))) {
-                    if (line2.length() == StringUtils.countMatches(line2, "=")) {
-                        level = 1;
-                    }
-                    if (line2.length() == StringUtils.countMatches(line2, "-")) {
-                        level = 2;
-                    }
-                    splitArray[1] = line;
-                } else {
-                    level = StringUtils.countMatches(line, "#");
-                    //splitArray = line.split(" +", 2);
-                    splitArray = line.split("[# ]+", 2);
-                }
 
+                splitArray = line.split(" +", 2);
+
+                if (Pattern.matches("#+", splitArray[0]) && splitArray[0].length() == StringUtils.countMatches(splitArray[0], "#")) {
+                    level = StringUtils.countMatches(splitArray[0], "#");
+                }
+                line = line.replaceAll("((^#+\\s)|(\\s#+$))", "");
+                line = line.replaceAll("((\\\\)+)", "");
+
+                if (level == 0 ) {
+                    if (line2 != null) {
+                        if (line2.length() == StringUtils.countMatches(line2, "=")) {
+                            level = 1;
+                        }
+                        if (line2.length() == StringUtils.countMatches(line2, "-")) {
+                            level = 2;
+                        }
+                    }
+                }
 
                 if ((level > 0) && (level <= 6)) {
                     numberOfGaps = (level - 1) * 4;
@@ -59,10 +68,12 @@ public class Content {
                     tableOfContents.append(StringUtils.repeat(' ', numberOfGaps)).
                             append(levels.get(level))
                                    .append(". [")
-                            .append(splitArray[1])
+                            //.append(splitArray[1])
+                            .append(line)
                             .append("](")
                             .append("#")
-                            .append(splitArray[1].toLowerCase().replace(' ', '-'))
+                            //.append(splitArray[1].toLowerCase().replace(' ', '-'))
+                            .append(line.toLowerCase().replace(' ', '-'))
                             .append(")\n");
                 }
                 line = line2;
