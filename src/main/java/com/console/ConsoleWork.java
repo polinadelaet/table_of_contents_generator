@@ -7,39 +7,43 @@ import java.util.Scanner;
 
 public class ConsoleWork {
 
-    private Scanner skan;
-    private StringBuilder tableOfContents;
+    private Scanner scanner;
 
-    public ConsoleWork(InputStream inputStream, OutputStream outputStream) {
-        this.skan = new Scanner(inputStream);
+    public ConsoleWork(InputStream inputStream) {
+        this.scanner = new Scanner(inputStream);
     }
 
     public String readLine(){
-        return skan.nextLine();
+        return scanner.nextLine();
     }
 
+    public void start() {
 
-
-    public void start() throws IOException {
-
-        System.out.println("Welcome! You can enter the file name for adding table of contents.");
+        System.out.println("Welcome! You can enter a file path for adding table of " +
+                            "contents or enter \"exit\" to exit the program.");
 
         while (true) {
-            System.out.println("file name:");
+            System.out.println("\nEnter file path or exit:");
 
-            String filePath = readLine();
-            File file = new File(filePath);
-            FileReader fileReader = null;
-            try {
-                fileReader = new FileReader(file);
-                Content content = new Content(file);
-                System.out.println(content.createContents());
-            } catch (IOException e) {
-                System.out.println("Такого файла не существует или нет доступа к файлу.");
+            String str = readLine();
+            if (str.equals("exit")) {
+                System.exit(0);
             }
+
+            File file = new File(str);
+
+            if (file.exists()) {
+                if (!file.canRead()){
+                    System.out.println("You don't have permission to read this file.");
+                    System.exit(0);
+                }
+            } else {
+                System.out.println("File does not exist or cannot be opened for reading.");
+                continue;
+            }
+
+            Content content = new Content(file);
+            System.out.println(content.createContents());
         }
-
     }
-
-
 }

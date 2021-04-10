@@ -1,15 +1,22 @@
 package com;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
+
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
 public class Content {
+
+    private final File file;
+    private final StringBuilder tableOfContents;
+    private final StringBuilder content;
+
+    /**
+     * A number of headers at each level.
+     */
     private final Map<Integer, Integer> levels = new HashMap<>(){{
         put(1, 0);
         put(2, 0);
@@ -18,76 +25,75 @@ public class Content {
         put(5, 0);
         put(6, 0);
     }};
-    private final File file;
-    private StringBuilder tableOfContents = new StringBuilder();
-    private StringBuilder content = new StringBuilder();
 
     public Content(File file) {
         this.file = file;
+        this.tableOfContents = new StringBuilder();
+        this.content = new StringBuilder();
     }
 
     public String createContents() {
-        FileReader fileReader = null;
-        BufferedReader reader = null;
+        String []splitArray;
+        int lastHeaderLevel = 0;
+        try (FileReader fileReader = new FileReader(file);
+             BufferedReader reader = new BufferedReader(fileReader)) {
 
-        int numberOfGaps = 0;
-        String []splitArray = new String[2];
-        try {
-            fileReader = new FileReader(file);
-            reader = new BufferedReader(fileReader);
-            String line = reader.readLine();
-            while (line != null) {
-                int level = 0;
+            String currentLine = reader.readLine();
+            while (currentLine != null) {
+                int headerLevel = 0;
+
                 content.append("\n")
-                        .append(line);
-                String line2 = reader.readLine();
+                       .append(currentLine);
 
-                splitArray = line.split(" +", 2);
+                String nextLine = reader.readLine();
+                splitArray = currentLine.split(" +", 2);
 
-                if (Pattern.matches("#+", splitArray[0]) && splitArray[0].length() == StringUtils.countMatches(splitArray[0], "#")) {
-                    level = StringUtils.countMatches(splitArray[0], "#");
+                if (Pattern.matches("#+", splitArray[0])
+                                    && splitArray[0].length() == StringUtils.countMatches(splitArray[0], "#")) {
+                    headerLevel = StringUtils.countMatches(splitArray[0], "#");
                 }
-                line = line.replaceAll("((^#+\\s)|(\\s#+$))", "");
-                line = line.replaceAll("((\\\\)+)", "");
+                currentLine = currentLine
+                        .replaceAll("((^#+\\s)|(\\s#+$))", "")
+                        .replaceAll("((\\\\)+)", "");
 
-                if (level == 0 ) {
-                    if (line2 != null) {
-                        if (line2.length() == StringUtils.countMatches(line2, "=")) {
-                            level = 1;
+                if (headerLevel == 0 ) {
+                    if (nextLine != null) {
+                        if (nextLine.length() == StringUtils.countMatches(nextLine, "=")) {
+                            headerLevel = 1;
                         }
-                        if (line2.length() == StringUtils.countMatches(line2, "-")) {
-                            level = 2;
+                        if (nextLine.length() == StringUtils.countMatches(nextLine, "-")) {
+                            headerLevel = 2;
                         }
                     }
                 }
 
-                if ((level > 0) && (level <= 6)) {
-                    numberOfGaps = (level - 1) * 4;
-                    levels.put(level, levels.get(level) + 1);
-                    //String gaps = StringUtils.repeat('-', numberOfGaps);
-                    tableOfContents.append(StringUtils.repeat(' ', numberOfGaps)).
-                            append(levels.get(level))
-                                   .append(". [")
-                            //.append(splitArray[1])
-                            .append(line)
-                            .append("](")
-                            .append("#")
-                            //.append(splitArray[1].toLowerCase().replace(' ', '-'))
-                            .append(line.toLowerCase().replace(' ', '-'))
-                            .append(")\n");
+
+                if ((headerLevel > 0) && (headerLevel <= 6)) {
+                    createHeader(lastHeaderLevel, headerLevel, currentLine);
                 }
-                line = line2;
+                lastHeaderLevel = headerLevel;
+                currentLine = nextLine;
             }
-
-            // считаем сначала первую строку
         } catch (IOException e) {
-
+            System.out.println("File is empty.");
         }
-
-
-
-       tableOfContents.append(content);
-
+        tableOfContents.append(content);
         return tableOfContents.toString();
+    }
+
+    private void createHeader(int lastHeaderLevel, int headerLevel, String line) {
+        int numberOfGaps = (headerLevel - 1) * 4;
+        if (lastHeaderLevel > headerLevel) {
+            levels.put(lastHeaderLevel, 0);
+        }
+        levels.put(headerLevel, levels.get(headerLevel) + 1);
+        tableOfContents.append(StringUtils.repeat(' ', numberOfGaps))
+                .append(levels.get(headerLevel))
+                .append(". [")
+                .append(line)
+                .append("](")
+                .append("#")
+                .append(line.toLowerCase().replace(' ', '-'))
+                .append(")\n");
     }
 }
